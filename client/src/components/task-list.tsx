@@ -8,7 +8,14 @@ export function TaskList() {
   
   useEffect(() => {
     const today = getTodayDateString();
+    const controller = new AbortController();
+    const signal = controller.signal;
+    
     refreshTasks(today);
+
+    return () => {
+      controller.abort();
+    };
   }, [refreshTasks]);
 
   const today = getTodayDateString();

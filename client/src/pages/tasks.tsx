@@ -16,7 +16,11 @@ export default function Tasks() {
   
   useEffect(() => {
     const dateString = selectedDate.toISOString().split('T')[0];
-    refreshTasks(dateString);
+    const timeoutId = setTimeout(() => {
+      refreshTasks(dateString);
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
   }, [selectedDate, refreshTasks]);
   
   const handleDateChange = (date: Date | undefined) => {
