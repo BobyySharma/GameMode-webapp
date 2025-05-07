@@ -41,9 +41,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // For demo, login with default user
   useEffect(() => {
-    if (!user) {
-      login("Ash", "password123").catch(console.error);
-    }
+    const handleInitialLogin = async () => {
+      if (!user) {
+        try {
+          await login("Ash", "password123");
+        } catch (error) {
+          console.error("Failed to log in:", error);
+          // No need to show toast as login() already does that
+        }
+      }
+    };
+    
+    handleInitialLogin();
   }, []);
 
   const login = async (username: string, password: string) => {
@@ -52,13 +61,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const response = await apiRequest('POST', '/api/login', { username, password });
       const userData = await response.json();
       setUser(userData);
-      refreshTasks();
+      // Instead of calling refreshTasks directly, we'll call it after user state is updated
+      // to ensure we have the user ID available when refreshTasks runs
+      setTimeout(() => {
+        refreshTasks();
+      }, 0);
     } catch (error) {
       toast({
         title: "Login failed",
         description: error instanceof Error ? error.message : "Invalid credentials",
         variant: "destructive",
       });
+      throw error; // Re-throw so the caller can handle it too if needed
     } finally {
       setIsLoading(false);
     }

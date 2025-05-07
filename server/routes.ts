@@ -63,50 +63,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Login (simplified for demo)
   app.post("/api/login", async (req: Request, res: Response) => {
-    const { username, password } = req.body;
-    
-    if (!username || !password) {
-      return res.status(400).json({ message: "Username and password are required" });
-    }
-    
-    const user = await storage.getUserByUsername(username);
-    
-    if (!user || user.password !== password) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-    
-    // Update user streak
-    const today = new Date();
-    const lastActiveDate = new Date(user.lastActive);
-    
-    // Check if it's a new day since last login
-    const isNewDay = 
-      today.getDate() !== lastActiveDate.getDate() ||
-      today.getMonth() !== lastActiveDate.getMonth() ||
-      today.getFullYear() !== lastActiveDate.getFullYear();
+    try {
+      // Create a login schema using zod
+      const loginSchema = z.object({
+        username: z.string().min(1, "Username is required"),
+        password: z.string().min(1, "Password is required"),
+      });
       
-    if (isNewDay) {
-      const dayDifference = Math.floor(
-        (today.getTime() - lastActiveDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
+      // Validate the request body
+      const { username, password } = loginSchema.parse(req.body);
       
-      // If it's the next day, increase streak; if it's been more than a day, reset
-      let newStreak = user.streak;
-      if (dayDifference === 1) {
-        newStreak += 1;
-      } else if (dayDifference > 1) {
-        newStreak = 1; // Reset streak but count today
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user || user.password !== password) {
+        return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      await storage.updateUser(user.id, { 
-        streak: newStreak,
-        lastActive: today,
-      });
+      // Update user streak
+      const today = new Date();
+      const lastActiveDate = new Date(user.lastActive);
+      
+      // Check if it's a new day since last login
+      const isNewDay = 
+        today.getDate() !== lastActiveDate.getDate() ||
+        today.getMonth() !== lastActiveDate.getMonth() ||
+        today.getFullYear() !== lastActiveDate.getFullYear();
+        
+      if (isNewDay) {
+        const dayDifference = Math.floor(
+          (today.getTime() - lastActiveDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        
+        // If it's the next day, increase streak; if it's been more than a day, reset
+        let newStreak = user.streak;
+        if (dayDifference === 1) {
+          newStreak += 1;
+        } else if (dayDifference > 1) {
+          newStreak = 1; // Reset streak but count today
+        }
+        
+        await storage.updateUser(user.id, { 
+          streak: newStreak,
+          lastActive: today,
+        });
+      }
+      
+      // Don't send the password
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors });
+      }
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
-    
-    // Don't send the password
-    const { password: _, ...userWithoutPassword } = user;
-    res.json(userWithoutPassword);
   });
   
   // Task routes
