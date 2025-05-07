@@ -86,6 +86,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const refreshTasks = async (date?: string) => {
     if (!user) return;
 
+    // Debounce multiple rapid calls
+    if (isLoading) return;
+
     setIsLoading(true);
     try {
       const endpoint = date 
@@ -93,14 +96,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         : `/api/users/${user.id}/tasks`;
 
       const response = await apiRequest('GET', endpoint);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to fetch tasks: ${errorData.message || response.statusText}`);
-      }
       const tasksData = await response.json();
       setTasks(tasksData);
     } catch (error) {
-      console.error("Error fetching tasks:", error); // Log the error for debugging
+      console.error("Error fetching tasks:", error);
       toast({
         title: "Error loading tasks",
         description: "Failed to load your tasks. Please try again.",
