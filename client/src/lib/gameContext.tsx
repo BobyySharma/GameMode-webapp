@@ -86,10 +86,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const refreshTasks = async (date?: string) => {
     if (!user) return;
 
-    // Debounce multiple rapid calls
+    // Prevent concurrent refreshes
     if (isLoading) return;
 
     setIsLoading(true);
+    const controller = new AbortController();
+    
     try {
       const endpoint = date 
         ? `/api/users/${user.id}/tasks?date=${date}`

@@ -20,7 +20,10 @@ export async function apiRequest(
   try {
     const res = await fetch(url, {
       method,
-      headers: data ? { "Content-Type": "application/json" } : {},
+      headers: {
+        ...(data ? { "Content-Type": "application/json" } : {}),
+        "Cache-Control": "no-cache"
+      },
       body: data ? JSON.stringify(data) : undefined,
       credentials: "include",
     });
@@ -28,8 +31,8 @@ export async function apiRequest(
     await throwIfResNotOk(res);
     return res;
   } catch (error) {
-    console.error('API Request failed:', error);
-    throw error;
+    console.error('API Request failed:', error instanceof Error ? error.message : 'Network error');
+    throw new Error('Failed to connect to server');
   }
 }
 
