@@ -45,11 +45,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
   
   // Update user state when auth user changes
   useEffect(() => {
-    if (authUser && !user) {
+    if (authUser) {
       // Set game user from auth user
       setUser(authUser as User);
-      // Then fetch tasks
+      // Then fetch tasks for the user
       refreshTasks();
+    } else {
+      // Clear user and tasks when logged out
+      setUser(null);
+      setTasks([]);
     }
   }, [authUser]);
 

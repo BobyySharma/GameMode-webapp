@@ -16,7 +16,7 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
   
-  // Redirect if already logged in using useEffect (to avoid state updates during render)
+  // Redirect if already logged in
   useEffect(() => {
     if (user) {
       setLocation("/");
