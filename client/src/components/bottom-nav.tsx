@@ -47,7 +47,7 @@ export function BottomNav() {
   ];
   
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-black border-t border-red-900/30 shadow-lg z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-theme border-t border-theme shadow-lg z-50">
       <div className="max-w-md mx-auto flex justify-around">
         {navItems.map((item) => (
           <div key={item.path} className="flex-1">

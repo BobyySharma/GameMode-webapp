@@ -7,18 +7,18 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth, loginSchema, registerSchema } from "@/hooks/use-auth";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
 
 export default function AuthPage() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const { user, loginMutation, registerMutation } = useAuth();
-  const [, navigate] = useNavigate();
+  const [, setLocation] = useLocation();
   
   // Redirect if already logged in
   if (user) {
-    navigate("/");
+    setLocation("/");
     return null;
   }
   
