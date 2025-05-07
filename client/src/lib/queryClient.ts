@@ -37,8 +37,16 @@ export const getQueryFn: <T>(options: {
       return null;
     }
 
+    if (res.status === 401) {
+      return null;
+    }
     await throwIfResNotOk(res);
-    return await res.json();
+    try {
+      return await res.json();
+    } catch (err) {
+      console.error('Failed to parse JSON response:', err);
+      throw new Error('Invalid response format');
+    }
   };
 
 export const queryClient = new QueryClient({

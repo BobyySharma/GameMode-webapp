@@ -36,13 +36,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Calculate XP needed for next level
   const xpForNextLevel = user ? user.level * 100 : 100;
-  
+
   // Calculate XP percentage for progress bar
   const xpPercentage = user ? Math.min(100, Math.floor((user.xp % xpForNextLevel) / xpForNextLevel * 100)) : 0;
 
   // Use the authenticated user from useAuth
   const { user: authUser } = useAuth();
-  
+
   // Update user state when auth user changes
   useEffect(() => {
     if (authUser) {
@@ -63,8 +63,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const response = await apiRequest('POST', '/api/login', { username, password });
       const userData = await response.json();
       setUser(userData);
-      // Instead of calling refreshTasks directly, we'll call it after user state is updated
-      // to ensure we have the user ID available when refreshTasks runs
       setTimeout(() => {
         refreshTasks();
       }, 0);
@@ -74,7 +72,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         description: error instanceof Error ? error.message : "Invalid credentials",
         variant: "destructive",
       });
-      throw error; // Re-throw so the caller can handle it too if needed
+      throw error; 
     } finally {
       setIsLoading(false);
     }
@@ -87,17 +85,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const refreshTasks = async (date?: string) => {
     if (!user) return;
-    
+
     setIsLoading(true);
     try {
       const endpoint = date 
         ? `/api/users/${user.id}/tasks?date=${date}`
         : `/api/users/${user.id}/tasks`;
-      
+
       const response = await apiRequest('GET', endpoint);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Failed to fetch tasks: ${errorData.message || response.statusText}`);
+      }
       const tasksData = await response.json();
       setTasks(tasksData);
     } catch (error) {
+      console.error("Error fetching tasks:", error); // Log the error for debugging
       toast({
         title: "Error loading tasks",
         description: "Failed to load your tasks. Please try again.",
@@ -110,7 +113,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const addTask = async (title: string, xp: number, dueDate: string) => {
     if (!user) return;
-    
+
     setIsLoading(true);
     try {
       const response = await apiRequest('POST', `/api/users/${user.id}/tasks`, {
@@ -118,10 +121,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         xp,
         dueDate,
       });
-      
+
       const newTask = await response.json();
       setTasks((prev) => [...prev, newTask]);
-      
+
       toast({
         title: "Task added",
         description: `New quest "${title}" added!`,
@@ -139,38 +142,33 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const completeTask = async (taskId: number) => {
     if (!user) return;
-    
+
     try {
-      // Update the task in UI immediately for better UX
       const taskToComplete = tasks.find(t => t.id === taskId);
       if (!taskToComplete || taskToComplete.completed) return;
-      
+
       setTasks(prev => 
         prev.map(task => 
           task.id === taskId ? { ...task, completed: true } : task
         )
       );
-      
-      // Update the task on the server
+
       const response = await apiRequest('PATCH', `/api/tasks/${taskId}`, {
         completed: true,
       });
-      
+
       const updatedTask = await response.json();
-      
-      // Show achievement notification
+
       setShowAchievement(true);
       setTimeout(() => setShowAchievement(false), 3000);
-      
-      // Get updated user data (to see XP change and possible level up)
+
       const userResponse = await apiRequest('GET', `/api/users/${user.id}`);
       const updatedUser = await userResponse.json();
-      
-      // Check if user leveled up
+
       if (updatedUser.level > user.level) {
         setShowLevelUp(true);
       }
-      
+
       setUser(updatedUser);
     } catch (error) {
       toast({
@@ -178,8 +176,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         description: "Failed to mark task as completed. Please try again.",
         variant: "destructive",
       });
-      
-      // Revert the UI change if there was an error
+
       setTasks(prev => 
         prev.map(task => 
           task.id === taskId ? { ...task, completed: false } : task
@@ -190,22 +187,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const deleteTask = async (taskId: number) => {
     if (!user) return;
-    
+
     try {
-      // Update UI first
       setTasks(prev => prev.filter(task => task.id !== taskId));
-      
-      // Then sync with server
+
       await apiRequest('DELETE', `/api/tasks/${taskId}`);
-      
+
       toast({
         title: "Task deleted",
         description: "Quest removed successfully.",
       });
     } catch (error) {
-      // Refresh tasks to get correct state if delete failed
       refreshTasks();
-      
+
       toast({
         title: "Error deleting task",
         description: "Failed to delete task. Please try again.",
@@ -216,26 +210,23 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const awardXpFromFocus = async (xp: number) => {
     if (!user) return;
-    
+
     try {
-      // Update user XP
       const newXp = user.xp + xp;
       const newLevel = Math.floor(newXp / 100) + 1;
       const levelUp = newLevel > user.level;
-      
-      // Update user data on the server
+
       const response = await apiRequest('PATCH', `/api/users/${user.id}`, {
         xp: newXp,
         level: newLevel,
       });
-      
+
       const updatedUser = await response.json();
       setUser(updatedUser);
-      
-      // Show notifications
+
       setShowAchievement(true);
       setTimeout(() => setShowAchievement(false), 3000);
-      
+
       if (levelUp) {
         setShowLevelUp(true);
       }
