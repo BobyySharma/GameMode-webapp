@@ -1,15 +1,38 @@
-import express, { type Express, Request, Response } from "express";
+import express, { type Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertTaskSchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
+import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup authentication
+  setupAuth(app);
+  
+  // Middleware to check if user is authenticated
+  const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+    if (req.isAuthenticated()) {
+      return next();
+    }
+    res.status(401).json({ message: "Not authenticated" });
+  };
+
+  // Current user
+  app.get("/api/user", isAuthenticated, (req: Request, res: Response) => {
+    // Password is already removed in passport serialization
+    res.json(req.user);
+  });
+  
   // User routes
-  app.get("/api/users/:id", async (req: Request, res: Response) => {
+  app.get("/api/users/:id", isAuthenticated, async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid user ID" });
+    }
+    
+    // Only allow users to get their own data
+    if (req.user?.id !== id) {
+      return res.status(403).json({ message: "Forbidden" });
     }
     
     const user = await storage.getUser(id);
@@ -22,30 +45,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(userWithoutPassword);
   });
   
-  app.post("/api/users", async (req: Request, res: Response) => {
-    try {
-      const userData = insertUserSchema.parse(req.body);
-      const existingUser = await storage.getUserByUsername(userData.username);
-      
-      if (existingUser) {
-        return res.status(409).json({ message: "Username already exists" });
-      }
-      
-      const user = await storage.createUser(userData);
-      const { password, ...userWithoutPassword } = user;
-      res.status(201).json(userWithoutPassword);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: error.errors });
-      }
-      res.status(500).json({ message: "Failed to create user" });
-    }
-  });
-  
-  app.patch("/api/users/:id", async (req: Request, res: Response) => {
+  app.patch("/api/users/:id", isAuthenticated, async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid user ID" });
+    }
+    
+    // Only allow users to update their own data
+    if (req.user?.id !== id) {
+      return res.status(403).json({ message: "Forbidden" });
     }
     
     try {
@@ -61,22 +69,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Login (simplified for demo)
-  app.post("/api/login", async (req: Request, res: Response) => {
+  // Login streak update
+  app.post("/api/update-streak", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      // Create a login schema using zod
-      const loginSchema = z.object({
-        username: z.string().min(1, "Username is required"),
-        password: z.string().min(1, "Password is required"),
-      });
-      
-      // Validate the request body
-      const { username, password } = loginSchema.parse(req.body);
-      
-      const user = await storage.getUserByUsername(username);
-      
-      if (!user || user.password !== password) {
-        return res.status(401).json({ message: "Invalid credentials" });
+      const user = await storage.getUser(req.user!.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
       }
       
       // Update user streak
@@ -102,29 +100,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           newStreak = 1; // Reset streak but count today
         }
         
-        await storage.updateUser(user.id, { 
+        const updatedUser = await storage.updateUser(user.id, { 
           streak: newStreak,
           lastActive: today,
         });
+        
+        if (updatedUser) {
+          const { password, ...userWithoutPassword } = updatedUser;
+          return res.json(userWithoutPassword);
+        }
       }
       
-      // Don't send the password
-      const { password: _, ...userWithoutPassword } = user;
+      // If no streak update was needed
+      const { password, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: error.errors });
-      }
-      console.error("Login error:", error);
+      console.error("Streak update error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
   
   // Task routes
-  app.get("/api/users/:userId/tasks", async (req: Request, res: Response) => {
+  app.get("/api/users/:userId/tasks", isAuthenticated, async (req: Request, res: Response) => {
     const userId = parseInt(req.params.userId);
     if (isNaN(userId)) {
       return res.status(400).json({ message: "Invalid user ID" });
+    }
+    
+    // Only allow users to see their own tasks
+    if (req.user?.id !== userId) {
+      return res.status(403).json({ message: "Forbidden" });
     }
     
     const date = req.query.date as string;
@@ -139,10 +144,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(tasks);
   });
   
-  app.post("/api/users/:userId/tasks", async (req: Request, res: Response) => {
+  app.post("/api/users/:userId/tasks", isAuthenticated, async (req: Request, res: Response) => {
     const userId = parseInt(req.params.userId);
     if (isNaN(userId)) {
       return res.status(400).json({ message: "Invalid user ID" });
+    }
+    
+    // Only allow users to create tasks for themselves
+    if (req.user?.id !== userId) {
+      return res.status(403).json({ message: "Forbidden" });
     }
     
     try {
@@ -159,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.patch("/api/tasks/:id", async (req: Request, res: Response) => {
+  app.patch("/api/tasks/:id", isAuthenticated, async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid task ID" });
@@ -169,6 +179,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const task = await storage.getTask(id);
       if (!task) {
         return res.status(404).json({ message: "Task not found" });
+      }
+      
+      // Only allow users to update their own tasks
+      if (req.user?.id !== task.userId) {
+        return res.status(403).json({ message: "Forbidden" });
       }
       
       // If marking the task as completed, award XP to the user
@@ -203,10 +218,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.delete("/api/tasks/:id", async (req: Request, res: Response) => {
+  app.delete("/api/tasks/:id", isAuthenticated, async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid task ID" });
+    }
+    
+    // Check if task belongs to user
+    const task = await storage.getTask(id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    
+    // Only allow users to delete their own tasks
+    if (req.user?.id !== task.userId) {
+      return res.status(403).json({ message: "Forbidden" });
     }
     
     const deleted = await storage.deleteTask(id);
