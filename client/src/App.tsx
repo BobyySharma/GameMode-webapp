@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SplashScreen } from "@/components/splash-screen";
 import { ProtectedRoute } from "@/components/protected-route";
+import { BedrockPassportProvider } from "@bedrockpassport/react";
 
 import Home from "@/pages/home";
 import Tasks from "@/pages/tasks";
@@ -32,37 +33,41 @@ function Router() {
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
-  
-  // Check if this is first time loading or a refresh
+
   useEffect(() => {
     const hasSeenSplash = sessionStorage.getItem("hasSeenSplash");
     if (hasSeenSplash) {
       setShowSplash(false);
     } else {
-      // Set the flag so splash only shows once per session
       sessionStorage.setItem("hasSeenSplash", "true");
     }
   }, []);
-  
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <GameProvider>
-            <TooltipProvider>
-              {showSplash ? (
-                <SplashScreen onComplete={() => setShowSplash(false)} />
-              ) : (
-                <>
-                  <Toaster />
-                  <Router />
-                </>
-              )}
-            </TooltipProvider>
-          </GameProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <BedrockPassportProvider
+      baseUrl="https://api.bedrockpassport.com"
+      authCallbackUrl="http://yourdomain.com/auth/callback"
+      tenantId="orange-c4c46f1pi5"
+    >
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <GameProvider>
+              <TooltipProvider>
+                {showSplash ? (
+                  <SplashScreen onComplete={() => setShowSplash(false)} />
+                ) : (
+                  <>
+                    <Toaster />
+                    <Router />
+                  </>
+                )}
+              </TooltipProvider>
+            </GameProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </BedrockPassportProvider>
   );
 }
 
