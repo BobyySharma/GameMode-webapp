@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -16,11 +16,12 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
   
-  // Redirect if already logged in
-  if (user) {
-    setLocation("/");
-    return null;
-  }
+  // Redirect if already logged in using useEffect (to avoid state updates during render)
+  useEffect(() => {
+    if (user) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
   
   return (
     <div className="flex items-center justify-center min-h-screen bg-black text-white px-4">

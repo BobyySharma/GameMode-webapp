@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { User, Task } from "@shared/schema";
 import { apiRequest } from "./queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 interface GameContextType {
   user: User | null;
@@ -39,21 +40,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Calculate XP percentage for progress bar
   const xpPercentage = user ? Math.min(100, Math.floor((user.xp % xpForNextLevel) / xpForNextLevel * 100)) : 0;
 
-  // For demo, login with default user
+  // Use the authenticated user from useAuth
+  const { user: authUser } = useAuth();
+  
+  // Update user state when auth user changes
   useEffect(() => {
-    const handleInitialLogin = async () => {
-      if (!user) {
-        try {
-          await login("Ash", "password123");
-        } catch (error) {
-          console.error("Failed to log in:", error);
-          // No need to show toast as login() already does that
-        }
-      }
-    };
-    
-    handleInitialLogin();
-  }, []);
+    if (authUser && !user) {
+      // Set game user from auth user
+      setUser(authUser as User);
+      // Then fetch tasks
+      refreshTasks();
+    }
+  }, [authUser]);
 
   const login = async (username: string, password: string) => {
     setIsLoading(true);
