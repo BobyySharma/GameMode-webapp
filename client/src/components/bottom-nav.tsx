@@ -47,18 +47,27 @@ export function BottomNav() {
   ];
   
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
+    <nav className="fixed bottom-0 left-0 right-0 bg-black border-t border-red-900/30 shadow-lg z-50">
       <div className="max-w-md mx-auto flex justify-around">
         {navItems.map((item) => (
           <div key={item.path} className="flex-1">
             <Link href={item.path}>
-              {/* Use the children approach directly without nesting another <a> tag */}
               <div className={cn(
-                "py-3 flex flex-col items-center justify-center cursor-pointer",
-                isActive(item.path) ? "text-primary" : "text-muted-foreground"
+                "py-3 flex flex-col items-center justify-center cursor-pointer transition-all duration-200",
+                isActive(item.path) 
+                  ? "text-red-500 scale-105" 
+                  : "text-gray-500 hover:text-gray-300"
               )}>
                 {item.icon}
-                <span className="text-xs mt-1">{item.label}</span>
+                <span className={cn(
+                  "text-xs mt-1 font-medium",
+                  isActive(item.path) && "font-['Orbitron']"
+                )}>
+                  {item.label}
+                </span>
+                {isActive(item.path) && (
+                  <div className="absolute -top-1 w-1.5 h-1.5 rounded-full bg-red-500 shadow-glow"></div>
+                )}
               </div>
             </Link>
           </div>
