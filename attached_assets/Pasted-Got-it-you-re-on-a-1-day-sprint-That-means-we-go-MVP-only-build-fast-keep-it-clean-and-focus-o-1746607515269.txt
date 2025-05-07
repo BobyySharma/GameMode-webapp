@@ -1,0 +1,127 @@
+Got it — you're on a 1-day sprint. That means we go MVP-only: build fast, keep it clean, and focus on working core features. Here's a hyper-focused 1-day action plan to get your GameMode productivity RPG app done today.
+
+🏃‍♂️ 1-Day GameMode MVP Plan
+🔹 1. Set Up Project (1 hour)
+flutter create gamemode
+
+Add dependencies:
+
+yaml
+Copy
+Edit
+firebase_core
+firebase_auth
+cloud_firestore
+provider
+Initialize Firebase (use Firebase CLI, enable Auth & Firestore)
+
+🔹 2. Build Key Screens (3–4 hours)
+🔸 Home/Dashboard Page:
+Show:
+
+XP bar (just a progress bar)
+
+Current level
+
+Today’s tasks list (with checkboxes)
+
+Buttons:
+
+“+ Add Task”
+
+“Start Focus Mode”
+
+🔸 Add Task Page:
+Fields:
+
+Task title
+
+XP reward
+
+Due date (or just “Today” for MVP)
+
+🔸 Focus Mode Page:
+25 min Pomodoro Timer (use Timer.periodic)
+
+Show task selected
+
+On complete: give XP → update user level
+
+🔹 3. Backend Logic (2–3 hours)
+🔸 Data Models:
+User:
+
+dart
+Copy
+Edit
+{
+  "username": "Ash",
+  "xp": 120,
+  "level": 2,
+  "streak": 3
+}
+Task:
+
+dart
+Copy
+Edit
+{
+  "title": "Read docs",
+  "completed": false,
+  "xp": 20,
+  "date": "2025-05-07"
+}
+🔸 Leveling Logic:
+dart
+Copy
+Edit
+int xpForLevel(int level) => level * 100;
+🔸 Completing a Task:
+Mark task complete
+
+Add XP to user
+
+Check if level up
+
+Update Firestore
+
+🔹 4. Polish + Submit (2–3 hours)
+Minimal UI polish:
+
+Use LinearProgressIndicator for XP
+
+Icons from Icons.check, Icons.add, etc.
+
+Use default Flutter theme for now
+
+Record Demo:
+
+Use screen recorder (Android or emulator)
+
+Narrate your clicks or add captions
+
+Keep it under 2–3 mins
+
+GitHub README:
+
+md
+Copy
+Edit
+## GameMode – Productivity RPG App
+
+GameMode turns your real-life tasks into a game. Complete tasks to gain XP and level up!
+
+- Built with Flutter + Firebase
+- Track tasks, gain XP, and use Focus Mode
+- Gamified productivity for the win 💪
+
+### How to Run
+1. Clone the repo
+2. Setup Firebase
+3. `flutter pub get && flutter run`
+
+💡 Submission Tip:
+Submit your GitHub link, demo video, and short project pitch.
+
+Make sure your app runs, even if not perfect — functionality matters more than polish for MVP.
+
