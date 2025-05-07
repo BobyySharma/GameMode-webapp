@@ -56,3 +56,77 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Custom animations for XP bar and level-up effects */
+@keyframes sparkle {
+  0%, 100% { 
+    opacity: 0.2;
+    transform: scale(0.8) translateX(0); 
+  }
+  50% { 
+    opacity: 0.9; 
+    transform: scale(1.2) translateX(4px);
+  }
+}
+
+.animate-sparkle {
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+/* Level up animation */
+.level-up {
+  animation: scale-up 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes scale-up {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Progress bar animation */
+.progress-fill {
+  position: relative;
+  transition: width 0.5s ease-out;
+}
+
+.progress-fill::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmer 2s infinite;
+  transform: translateX(-100%);
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Spin animation for level-up component */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
