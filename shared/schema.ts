@@ -14,7 +14,7 @@ export const users = pgTable("users", {
 
 export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   xp: integer("xp").notNull(),
   completed: boolean("completed").notNull().default(false),
